@@ -607,9 +607,18 @@ export function getDashboardHTML(): string {
 </head>
 <body>
     <div class="header">
-        <div class="container">
-            <h1>📊 MDL Dashboard</h1>
-            <p>Metrics Definition Library - Governance & Transparency</p>
+        <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1>📊 MDL Dashboard</h1>
+                <p>Metrics Definition Library - Governance & Transparency</p>
+            </div>
+            <button class="icon-btn icon-btn-large" onclick="openSettings()" style="background: rgba(255,255,255,0.2); color: white;">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Settings
+            </button>
         </div>
     </div>
     
@@ -944,6 +953,133 @@ export function getDashboardHTML(): string {
                         <button type="submit" class="btn btn-success">Save Metric</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <button class="close-btn" onclick="closeSettings()">&times;</button>
+                <h2>⚙️ Settings</h2>
+            </div>
+            <div class="modal-body">
+                <div class="detail-section">
+                    <h3>Application Information</h3>
+                    <div style="display: grid; grid-template-columns: 200px 1fr; gap: 1rem; margin-top: 1rem;">
+                        <div style="font-weight: 600;">Version:</div>
+                        <div id="appVersion">1.0.0</div>
+                        
+                        <div style="font-weight: 600;">Build:</div>
+                        <div id="appBuild">Production</div>
+                        
+                        <div style="font-weight: 600;">Environment:</div>
+                        <div id="appEnvironment">Desktop App</div>
+                    </div>
+                </div>
+
+                <div class="detail-section" style="margin-top: 2rem;">
+                    <h3>Data Storage Configuration</h3>
+                    <p style="color: #666; margin-bottom: 1rem;">Choose how you want to store your metrics data.</p>
+                    
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: flex; align-items: center; padding: 1rem; border: 2px solid #e2e8f0; border-radius: 6px; cursor: pointer; transition: all 0.2s;" onclick="selectStorageType('local')">
+                            <input type="radio" name="storageType" value="local" id="storageLocal" checked style="margin-right: 1rem; width: 20px; height: 20px;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.25rem;">📁 Local File Storage</div>
+                                <div style="color: #666; font-size: 0.9rem;">Store metrics in local JSON files (.mdl/metrics.json)</div>
+                                <div style="color: #10b981; font-size: 0.85rem; margin-top: 0.5rem;">✓ No setup required • ✓ Fast • ✓ Portable</div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: flex; align-items: center; padding: 1rem; border: 2px solid #e2e8f0; border-radius: 6px; cursor: pointer; transition: all 0.2s;" onclick="selectStorageType('database')">
+                            <input type="radio" name="storageType" value="database" id="storageDatabase" style="margin-right: 1rem; width: 20px; height: 20px;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 0.25rem;">🗄️ Database Storage</div>
+                                <div style="color: #666; font-size: 0.9rem;">Connect to MySQL, PostgreSQL, or MongoDB</div>
+                                <div style="color: #f59e0b; font-size: 0.85rem; margin-top: 0.5rem;">⚠️ Requires database setup • ⚠️ Coming soon</div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div id="databaseConfig" style="display: none; padding: 1.5rem; background: #f9fafb; border-radius: 6px; margin-top: 1rem;">
+                        <h4 style="margin-bottom: 1rem;">Database Connection</h4>
+                        
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label>Database Type</label>
+                            <select id="dbType" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;">
+                                <option value="postgresql">PostgreSQL</option>
+                                <option value="mysql">MySQL</option>
+                                <option value="mongodb">MongoDB</option>
+                            </select>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Host</label>
+                                <input type="text" id="dbHost" placeholder="localhost" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;">
+                            </div>
+                            <div class="form-group">
+                                <label>Port</label>
+                                <input type="text" id="dbPort" placeholder="5432" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;">
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 1rem;">
+                            <label>Database Name</label>
+                            <input type="text" id="dbName" placeholder="mdl_metrics" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;">
+                        </div>
+
+                        <div class="form-grid" style="margin-top: 1rem;">
+                            <div class="form-group">
+                                <label>Username</label>
+                                <input type="text" id="dbUser" placeholder="username" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;">
+                            </div>
+                            <div class="form-group">
+                                <label>Password</label>
+                                <input type="password" id="dbPassword" placeholder="password" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px;">
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+                            <button class="btn btn-secondary" onclick="testDatabaseConnection()">Test Connection</button>
+                            <div id="dbConnectionStatus" style="display: flex; align-items: center; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.9rem;"></div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 2rem; padding: 1rem; background: #eff6ff; border-left: 4px solid #667eea; border-radius: 6px;">
+                        <div style="font-weight: 600; color: #667eea; margin-bottom: 0.5rem;">💡 Current Storage</div>
+                        <div id="currentStorageInfo" style="color: #374151; font-size: 0.9rem;">
+                            Using local file storage: <code style="background: white; padding: 0.25rem 0.5rem; border-radius: 3px; font-family: monospace;">.mdl/metrics.json</code>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section" style="margin-top: 2rem;">
+                    <h3>About MDL</h3>
+                    <p style="color: #666; line-height: 1.6;">
+                        MDL (Metrics Definition Library) is a comprehensive application to store and manage Metric Definitions 
+                        with support for multiple interfaces (API, CLI, config files), OPA policy generation, and visualization 
+                        dashboard for transparency and governance.
+                    </p>
+                    <div style="margin-top: 1rem;">
+                        <a href="https://github.com/S-Analytics/MDL" target="_blank" style="color: #667eea; text-decoration: none;">
+                            📚 Documentation
+                        </a>
+                        <span style="margin: 0 1rem; color: #ccc;">|</span>
+                        <a href="https://github.com/S-Analytics/MDL/issues" target="_blank" style="color: #667eea; text-decoration: none;">
+                            🐛 Report Issue
+                        </a>
+                    </div>
+                </div>
+
+                <div class="form-actions" style="margin-top: 2rem;">
+                    <button type="button" class="btn btn-secondary" onclick="closeSettings()">Close</button>
+                    <button type="button" class="btn btn-success" onclick="saveSettings()">Save Settings</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1821,6 +1957,107 @@ export function getDashboardHTML(): string {
             editingDomainId = null;
         }
 
+        // Settings Functions
+        function openSettings() {
+            document.getElementById('settingsModal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+            loadSettings();
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        function loadSettings() {
+            // Load app version from package.json
+            document.getElementById('appVersion').textContent = '1.0.0';
+            document.getElementById('appBuild').textContent = 'Production';
+            document.getElementById('appEnvironment').textContent = typeof window.electronAPI !== 'undefined' ? 'Desktop App' : 'Web Browser';
+            
+            // Load storage settings from localStorage
+            const settings = JSON.parse(localStorage.getItem('mdl_settings') || '{"storageType":"local"}');
+            
+            if (settings.storageType === 'database') {
+                document.getElementById('storageDatabase').checked = true;
+                document.getElementById('databaseConfig').style.display = 'block';
+                
+                // Load saved DB config
+                if (settings.database) {
+                    document.getElementById('dbType').value = settings.database.type || 'postgresql';
+                    document.getElementById('dbHost').value = settings.database.host || '';
+                    document.getElementById('dbPort').value = settings.database.port || '';
+                    document.getElementById('dbName').value = settings.database.name || '';
+                    document.getElementById('dbUser').value = settings.database.user || '';
+                }
+            } else {
+                document.getElementById('storageLocal').checked = true;
+                document.getElementById('databaseConfig').style.display = 'none';
+            }
+        }
+
+        function selectStorageType(type) {
+            if (type === 'database') {
+                document.getElementById('storageDatabase').checked = true;
+                document.getElementById('databaseConfig').style.display = 'block';
+            } else {
+                document.getElementById('storageLocal').checked = true;
+                document.getElementById('databaseConfig').style.display = 'none';
+            }
+        }
+
+        async function testDatabaseConnection() {
+            const statusDiv = document.getElementById('dbConnectionStatus');
+            statusDiv.textContent = '⏳ Testing connection...';
+            statusDiv.style.background = '#fef3c7';
+            statusDiv.style.color = '#92400e';
+            statusDiv.style.display = 'flex';
+
+            // Simulate connection test (would be actual API call in production)
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            // For now, show that DB feature is coming soon
+            statusDiv.textContent = '⚠️ Database support coming soon';
+            statusDiv.style.background = '#fef3c7';
+            statusDiv.style.color = '#92400e';
+        }
+
+        function saveSettings() {
+            const storageType = document.querySelector('input[name="storageType"]:checked').value;
+            
+            const settings = {
+                storageType: storageType,
+                savedAt: new Date().toISOString()
+            };
+
+            if (storageType === 'database') {
+                settings.database = {
+                    type: document.getElementById('dbType').value,
+                    host: document.getElementById('dbHost').value,
+                    port: document.getElementById('dbPort').value,
+                    name: document.getElementById('dbName').value,
+                    user: document.getElementById('dbUser').value,
+                    // Note: In production, password should be encrypted and not stored in localStorage
+                };
+            }
+
+            localStorage.setItem('mdl_settings', JSON.stringify(settings));
+            
+            showToast('Settings saved successfully!', 'success');
+            
+            // Update the current storage info display
+            if (storageType === 'local') {
+                document.getElementById('currentStorageInfo').innerHTML = 
+                    'Using local file storage: <code style="background: white; padding: 0.25rem 0.5rem; border-radius: 3px; font-family: monospace;">.mdl/metrics.json</code>';
+            } else {
+                document.getElementById('currentStorageInfo').innerHTML = 
+                    'Using database storage: <code style="background: white; padding: 0.25rem 0.5rem; border-radius: 3px; font-family: monospace;">' + 
+                    settings.database.type + ' @ ' + settings.database.host + '</code> (Coming Soon)';
+            }
+            
+            closeSettings();
+        }
+
         // Domain Form Submission
         document.addEventListener('DOMContentLoaded', function() {
             const domainForm = document.getElementById('domainForm');
@@ -2577,6 +2814,7 @@ export function getDashboardHTML(): string {
                 closeImportModal();
                 closeObjectiveFormModal();
                 closeDomainFormModal();
+                closeSettings();
             }
         });
 
@@ -2608,6 +2846,12 @@ export function getDashboardHTML(): string {
         document.getElementById('domainFormModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 closeDomainFormModal();
+            }
+        });
+
+        document.getElementById('settingsModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSettings();
             }
         });
 

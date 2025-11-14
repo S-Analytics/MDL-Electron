@@ -12,9 +12,10 @@ A comprehensive application to store and manage Metric Definitions with support 
   - **Desktop App** for macOS, Windows, and Linux
 - 🔐 **OPA Policy Integration**: Generate Open Policy Agent policies from metric definitions
 - 📈 **Visualization Dashboard**: Web-based dashboard for transparency and governance
+- ⚙️ **Settings & Configuration**: Configure storage (local/database), view app info
 - ✅ **Validation Rules**: Define validation rules for metrics (min, max, range, enum, etc.)
 - 👥 **Governance Support**: Track owners, teams, approvers, and compliance levels
-- 💾 **Persistent Storage**: File-based persistence with in-memory performance
+- 💾 **Persistent Storage**: File-based persistence with optional database support (coming soon)
 - 💻 **Cross-Platform**: Available as installable desktop application or web server
 
 ## Installation
