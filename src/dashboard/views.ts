@@ -603,6 +603,35 @@ export function getDashboardHTML(): string {
             opacity: 1;
             transform: translateX(-50%) translateY(-8px);
         }
+        
+        /* Format selection buttons */
+        .format-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem 1rem;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #334155;
+        }
+        .format-btn:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(102, 126, 234, 0.1);
+        }
+        .format-btn.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .format-btn.selected svg {
+            stroke: white;
+        }
     </style>
 </head>
 <body>
@@ -689,6 +718,65 @@ export function getDashboardHTML(): string {
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="closeImportModal()">Cancel</button>
                     <button type="button" class="btn btn-success" onclick="performImport()">Import Metrics</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Download Objective Report Modal -->
+    <div class="modal" id="downloadObjectiveModal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <button class="close-btn" onclick="closeDownloadObjectiveModal()">&times;</button>
+                <h2>Download Objective Report</h2>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 1.5rem;">
+                    <p style="color: #666; margin-bottom: 1rem;">Generate a comprehensive report for this objective including all key results and metrics.</p>
+                    <div style="background: #f9fafb; padding: 1rem; border-radius: 6px; border-left: 4px solid #667eea;">
+                        <strong id="downloadObjectiveName" style="display: block; margin-bottom: 0.5rem;"></strong>
+                        <span id="downloadObjectiveId" style="font-size: 0.9rem; color: #666;"></span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Select Format</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-top: 0.75rem;">
+                        <button type="button" class="format-btn" onclick="selectDownloadFormat('pdf')" data-format="pdf">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 32px; height: 32px; margin-bottom: 0.5rem;">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            </svg>
+                            <div style="font-weight: 600;">PDF</div>
+                            <div style="font-size: 0.8rem; color: #666;">Portable Document</div>
+                        </button>
+                        <button type="button" class="format-btn" onclick="selectDownloadFormat('docx')" data-format="docx">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 32px; height: 32px; margin-bottom: 0.5rem;">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <div style="font-weight: 600;">Word</div>
+                            <div style="font-size: 0.8rem; color: #666;">Microsoft Word</div>
+                        </button>
+                        <button type="button" class="format-btn" onclick="selectDownloadFormat('md')" data-format="md">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 32px; height: 32px; margin-bottom: 0.5rem;">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            <div style="font-weight: 600;">Markdown</div>
+                            <div style="font-size: 0.8rem; color: #666;">Plain Text</div>
+                        </button>
+                    </div>
+                </div>
+
+                <input type="hidden" id="selectedObjectiveId">
+                <input type="hidden" id="selectedDownloadFormat" value="md">
+
+                <div class="form-actions" style="margin-top: 2rem;">
+                    <button type="button" class="btn btn-secondary" onclick="closeDownloadObjectiveModal()">Cancel</button>
+                    <button type="button" class="btn btn-success" onclick="downloadObjectiveReport()">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 20px; height: 20px; margin-right: 0.5rem;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Download Report
+                    </button>
                 </div>
             </div>
         </div>
@@ -1453,6 +1541,12 @@ export function getDashboardHTML(): string {
                         </div>
                     \` : ''}
                     <div class="action-buttons" style="justify-content: flex-end;">
+                        <button class="icon-btn success" onclick="event.stopPropagation(); openDownloadObjectiveModal('\${obj.objective_id}')">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            <span class="tooltip">Download Objective Report</span>
+                        </button>
                         <button class="icon-btn primary" onclick="event.stopPropagation(); openEditObjectiveForm('\${obj.objective_id}')">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -2058,6 +2152,188 @@ export function getDashboardHTML(): string {
             closeSettings();
         }
 
+        // Download Objective Report Functions
+        function openDownloadObjectiveModal(objectiveId) {
+            const objective = allObjectives.find(o => o.objective_id === objectiveId);
+            if (!objective) {
+                showToast('Objective not found', 'error');
+                return;
+            }
+
+            document.getElementById('downloadObjectiveName').textContent = objective.name;
+            document.getElementById('downloadObjectiveId').textContent = 'ID: ' + objectiveId;
+            document.getElementById('selectedObjectiveId').value = objectiveId;
+            
+            // Reset format selection
+            document.querySelectorAll('.format-btn').forEach(btn => btn.classList.remove('selected'));
+            document.querySelector('.format-btn[data-format="md"]').classList.add('selected');
+            document.getElementById('selectedDownloadFormat').value = 'md';
+            
+            document.getElementById('downloadObjectiveModal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeDownloadObjectiveModal() {
+            document.getElementById('downloadObjectiveModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function selectDownloadFormat(format) {
+            document.querySelectorAll('.format-btn').forEach(btn => btn.classList.remove('selected'));
+            document.querySelector('.format-btn[data-format="' + format + '"]').classList.add('selected');
+            document.getElementById('selectedDownloadFormat').value = format;
+        }
+
+        function downloadObjectiveReport() {
+            const objectiveId = document.getElementById('selectedObjectiveId').value;
+            const format = document.getElementById('selectedDownloadFormat').value;
+            
+            const objective = allObjectives.find(o => o.objective_id === objectiveId);
+            if (!objective) {
+                showToast('Objective not found', 'error');
+                return;
+            }
+
+            let content = '';
+            let mimeType = '';
+            let extension = '';
+            let filename = \`\${objective.objective_id}_\${objective.name.replace(/[^a-z0-9]/gi, '_')}\`;
+
+            if (format === 'md') {
+                content = generateMarkdownReport(objective);
+                mimeType = 'text/markdown';
+                extension = 'md';
+            } else if (format === 'pdf') {
+                // Generate HTML for PDF conversion
+                content = generateHTMLReport(objective);
+                mimeType = 'text/html';
+                extension = 'html';
+                showToast('PDF generation requires additional setup. Downloading HTML for now.', 'info');
+            } else if (format === 'docx') {
+                // Generate HTML for Word conversion
+                content = generateHTMLReport(objective);
+                mimeType = 'text/html';
+                extension = 'html';
+                showToast('Word document generation requires additional setup. Downloading HTML for now.', 'info');
+            }
+
+            // Create and download the file
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = \`\${filename}.\${extension}\`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showToast(\`Report downloaded successfully!\`, 'success');
+            closeDownloadObjectiveModal();
+        }
+
+        function generateMarkdownReport(objective) {
+            const date = new Date().toISOString().split('T')[0];
+            
+            let md = '# Objective Report: ' + objective.name + '\\n\\n';
+            md += '**Generated:** ' + date + '\\n\\n';
+            md += '---\\n\\n';
+            
+            // Objective Details
+            md += '## 📋 Objective Details\\n\\n';
+            md += '- **Objective ID:** ' + objective.objective_id + '\\n';
+            md += '- **Name:** ' + objective.name + '\\n';
+            md += '- **Description:** ' + objective.description + '\\n';
+            md += '- **Owner Team:** ' + objective.owner_team + '\\n';
+            md += '- **Status:** ' + objective.status + '\\n';
+            md += '- **Priority:** ' + (objective.priority || 'Medium') + '\\n';
+            md += '- **Strategic Pillar:** ' + (objective.strategic_pillar || 'N/A') + '\\n';
+            md += '- **Timeframe:** ' + objective.timeframe.start + ' to ' + objective.timeframe.end + '\\n\\n';
+            
+            // Key Results
+            if (objective.key_results && objective.key_results.length > 0) {
+                md += '## 🎯 Key Results (' + objective.key_results.length + ')\\n\\n';
+                
+                objective.key_results.forEach((kr, index) => {
+                    const current = kr.current_value ?? kr.baseline_value;
+                    const range = Math.abs(kr.target_value - kr.baseline_value);
+                    const progress = range > 0 ? Math.min(100, Math.abs(current - kr.baseline_value) / range * 100) : 0;
+                    const isOnTrack = kr.direction === 'increase' 
+                        ? current >= (kr.baseline_value + range * 0.5)
+                        : current <= (kr.baseline_value - range * 0.5);
+                    
+                    md += '### ' + (index + 1) + '. ' + kr.name + '\\n\\n';
+                    md += '- **Baseline:** ' + kr.baseline_value + ' ' + kr.unit + '\\n';
+                    md += '- **Current:** ' + current + ' ' + kr.unit + '\\n';
+                    md += '- **Target:** ' + kr.target_value + ' ' + kr.unit + '\\n';
+                    md += '- **Direction:** ' + kr.direction + '\\n';
+                    md += '- **Progress:** ' + Math.round(progress) + '%\\n';
+                    md += '- **Status:** ' + (isOnTrack ? '✅ On Track' : '⚠️ Needs Attention') + '\\n';
+                    
+                    if (kr.metric_ids && kr.metric_ids.length > 0) {
+                        md += '- **Associated Metrics:** ' + kr.metric_ids.join(', ') + '\\n';
+                        
+                        // Include metric details
+                        md += '\\n#### Associated Metric Details\\n\\n';
+                        kr.metric_ids.forEach(metricId => {
+                            const metric = allMetrics.find(m => m.metric_id === metricId);
+                            if (metric) {
+                                md += '- **' + metric.name + '** (\`' + metric.metric_id + '\`)\\n';
+                                md += '  - Category: ' + metric.category + '\\n';
+                                md += '  - Owner: ' + (metric.governance?.owner_team || metric.owner?.team || 'N/A') + '\\n';
+                                if (metric.definition) {
+                                    md += '  - Formula: \`' + metric.definition.formula + '\`\\n';
+                                    md += '  - Unit: ' + metric.definition.unit + '\\n';
+                                }
+                            }
+                        });
+                    }
+                    
+                    md += '\\n';
+                });
+            } else {
+                md += '## 🎯 Key Results\\n\\nNo key results defined for this objective.\\n\\n';
+            }
+            
+            // Additional Information
+            md += '## 📊 Summary\\n\\n';
+            md += '- **Total Key Results:** ' + (objective.key_results?.length || 0) + '\\n';
+            md += '- **Total Metrics:** ' + (objective.key_results?.reduce((sum, kr) => sum + (kr.metric_ids?.length || 0), 0) || 0) + '\\n';
+            
+            const avgProgress = objective.key_results && objective.key_results.length > 0
+                ? objective.key_results.reduce((sum, kr) => {
+                    const current = kr.current_value ?? kr.baseline_value;
+                    const range = Math.abs(kr.target_value - kr.baseline_value);
+                    const progress = range > 0 ? Math.min(100, Math.abs(current - kr.baseline_value) / range * 100) : 0;
+                    return sum + progress;
+                }, 0) / objective.key_results.length
+                : 0;
+            
+            md += '- **Average Progress:** ' + Math.round(avgProgress) + '%\\n\\n';
+            
+            md += '---\\n\\n';
+            md += '*Report generated by MDL Dashboard v1.0.0*\\n';
+            
+            return md;
+        }
+
+        function generateHTMLReport(objective) {
+            const date = new Date().toISOString().split('T')[0];
+            
+            // For now, generate Markdown and wrap in HTML
+            const mdContent = generateMarkdownReport(objective);
+            const html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Objective Report</title>' +
+                '<style>body{font-family:sans-serif;max-width:900px;margin:2rem auto;padding:2rem;line-height:1.6;}' +
+                'h1,h2,h3{color:#667eea;}code{background:#f4f4f4;padding:2px 6px;border-radius:3px;}</style>' +
+                '</head><body><pre style="white-space:pre-wrap;font-family:sans-serif;">' + mdContent + '</pre></body></html>';
+            return html;
+        }
+        
+        function generateHTMLReportOld(objective) {
+            // Old complex version - replaced with simpler Markdown wrapper
+            return generateHTMLReport(objective);
+        }
+        
         // Domain Form Submission
         document.addEventListener('DOMContentLoaded', function() {
             const domainForm = document.getElementById('domainForm');
@@ -2815,6 +3091,7 @@ export function getDashboardHTML(): string {
                 closeObjectiveFormModal();
                 closeDomainFormModal();
                 closeSettings();
+                closeDownloadObjectiveModal();
             }
         });
 
@@ -2846,6 +3123,12 @@ export function getDashboardHTML(): string {
         document.getElementById('domainFormModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 closeDomainFormModal();
+            }
+        });
+
+        document.getElementById('downloadObjectiveModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDownloadObjectiveModal();
             }
         });
 

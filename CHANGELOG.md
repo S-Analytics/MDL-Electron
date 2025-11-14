@@ -49,6 +49,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Click-outside-to-close functionality
   - Toast notifications for save confirmation
 
+#### Objective Reporting
+- **Download Objective Reports**: Generate comprehensive reports for objectives
+  - Download button on each objective card
+  - Multiple format support:
+    - Markdown (.md) - fully functional, ideal for documentation
+    - HTML - styled reports (ready for PDF/Word conversion)
+    - PDF - requires jsPDF library (UI ready)
+    - Word (.docx) - requires docx library (UI ready)
+  - Report contents:
+    - Complete objective details (ID, name, description, owner, status, priority)
+    - All key results with progress tracking
+    - Associated metrics with formulas and definitions
+    - Progress calculations and status indicators
+    - Summary statistics (total KRs, metrics, average progress)
+  - Visual format selection modal
+  - Automatic filename generation from objective ID and name
+  - Professional report styling and formatting
+  - Keyboard shortcuts and click-outside-to-close
+
 #### Core Features
 - **Metric Management**
   - Create, read, update, and delete metric definitions
