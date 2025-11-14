@@ -1,8 +1,8 @@
-import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
-import { IMetricStore } from '../storage';
+import express, { NextFunction, Request, Response } from 'express';
 import { MetricDefinitionInput } from '../models';
 import { PolicyGenerator } from '../opa';
+import { IMetricStore } from '../storage';
 
 export interface ServerConfig {
   port?: number;
@@ -37,9 +37,9 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
   app.get('/api/metrics', async (req: Request, res: Response) => {
     try {
       const filters = {
-        category: req.query.category as string,
-        dataType: req.query.dataType as string,
-        owner: req.query.owner as string,
+        business_domain: req.query.business_domain as string,
+        metric_type: req.query.metric_type as string,
+        tier: req.query.tier as string,
         tags: req.query.tags ? (req.query.tags as string).split(',') : undefined,
       };
 
@@ -74,10 +74,10 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
       const input: MetricDefinitionInput = req.body;
       
       // Validate required fields
-      if (!input.name || !input.description || !input.category || !input.dataType) {
+      if (!input.name || !input.description) {
         return res.status(400).json({
           success: false,
-          error: 'Missing required fields: name, description, category, dataType',
+          error: 'Missing required fields: name, description',
         });
       }
 
@@ -155,16 +155,24 @@ export function createServer(store: IMetricStore, _config: ServerConfig = {}) {
       
       const stats = {
         total: allMetrics.length,
-        byCategory: {} as Record<string, number>,
-        byDataType: {} as Record<string, number>,
+        byTier: {} as Record<string, number>,
+        byMetricType: {} as Record<string, number>,
+        byBusinessDomain: {} as Record<string, number>,
         byOwner: {} as Record<string, number>,
       };
 
       allMetrics.forEach((metric) => {
-        stats.byCategory[metric.category] = (stats.byCategory[metric.category] || 0) + 1;
-        stats.byDataType[metric.dataType] = (stats.byDataType[metric.dataType] || 0) + 1;
-        if (metric.governance?.owner) {
-          stats.byOwner[metric.governance.owner] = (stats.byOwner[metric.governance.owner] || 0) + 1;
+        if (metric.tier) {
+          stats.byTier[metric.tier] = (stats.byTier[metric.tier] || 0) + 1;
+        }
+        if (metric.metric_type) {
+          stats.byMetricType[metric.metric_type] = (stats.byMetricType[metric.metric_type] || 0) + 1;
+        }
+        if (metric.business_domain) {
+          stats.byBusinessDomain[metric.business_domain] = (stats.byBusinessDomain[metric.business_domain] || 0) + 1;
+        }
+        if (metric.governance?.technical_owner) {
+          stats.byOwner[metric.governance.technical_owner] = (stats.byOwner[metric.governance.technical_owner] || 0) + 1;
         }
       });
 

@@ -1,4 +1,4 @@
-import { MetricDefinition, ValidationRuleType } from '../models';
+import { MetricDefinition } from '../models';
 
 /**
  * OPA Policy Generator
@@ -9,10 +9,12 @@ export class PolicyGenerator {
    * Generate OPA policies for a metric definition
    */
   static generatePolicy(metric: MetricDefinition): string {
-    const packageName = this.sanitizePackageName(metric.id);
+    const packageName = this.sanitizePackageName(metric.metric_id);
     
     let policy = `# OPA Policy for Metric: ${metric.name}\n`;
     policy += `# Category: ${metric.category}\n`;
+    policy += `# Business Domain: ${metric.business_domain}\n`;
+    policy += `# Tier: ${metric.tier}\n`;
     policy += `# Generated at: ${new Date().toISOString()}\n\n`;
     policy += `package metrics.${packageName}\n\n`;
     
@@ -22,9 +24,9 @@ export class PolicyGenerator {
     // Default deny
     policy += `default allow = false\n\n`;
     
-    // Generate validation rules
-    if (metric.validationRules && metric.validationRules.length > 0) {
-      policy += this.generateValidationRules(metric);
+    // Generate target and alert rules
+    if (metric.targets_and_alerts && metric.targets_and_alerts.alert_rules.length > 0) {
+      policy += this.generateAlertRules(metric);
     }
     
     // Generate governance rules
@@ -35,10 +37,10 @@ export class PolicyGenerator {
     // Main allow rule
     policy += `# Main authorization rule\n`;
     policy += `allow if {\n`;
-    policy += `    input.metric_id == "${metric.id}"\n`;
+    policy += `    input.metric_id == "${metric.metric_id}"\n`;
     
-    if (metric.validationRules && metric.validationRules.length > 0) {
-      policy += `    validate_value\n`;
+    if (metric.targets_and_alerts && metric.targets_and_alerts.alert_rules.length > 0) {
+      policy += `    validate_thresholds\n`;
     }
     
     if (metric.governance) {
@@ -51,44 +53,18 @@ export class PolicyGenerator {
   }
 
   /**
-   * Generate validation rules for OPA policy
+   * Generate alert threshold rules for OPA policy
    */
-  private static generateValidationRules(metric: MetricDefinition): string {
-    let rules = `# Validation rules\n`;
+  private static generateAlertRules(metric: MetricDefinition): string {
+    let rules = `# Threshold validation rules\n`;
     
-    rules += `validate_value if {\n`;
-    const conditions: string[] = [];
+    rules += `validate_thresholds if {\n`;
+    rules += `    # Check if value is within acceptable range\n`;
     
-    metric.validationRules?.forEach((rule) => {
-      switch (rule.type) {
-        case ValidationRuleType.MIN:
-          conditions.push(`    input.value >= ${rule.value}`);
-          break;
-        case ValidationRuleType.MAX:
-          conditions.push(`    input.value <= ${rule.value}`);
-          break;
-        case ValidationRuleType.RANGE:
-          if (rule.value && Array.isArray(rule.value) && rule.value.length === 2) {
-            conditions.push(`    input.value >= ${rule.value[0]}`);
-            conditions.push(`    input.value <= ${rule.value[1]}`);
-          }
-          break;
-        case ValidationRuleType.REQUIRED:
-          conditions.push(`    input.value != null`);
-          break;
-        case ValidationRuleType.ENUM:
-          if (rule.value && Array.isArray(rule.value)) {
-            const values = rule.value.map((v) => `"${v}"`).join(', ');
-            conditions.push(`    input.value in [${values}]`);
-          }
-          break;
-      }
-    });
-    
-    if (conditions.length > 0) {
-      rules += conditions.join('\n') + '\n';
-    } else {
-      rules += `    true\n`;
+    if (metric.targets_and_alerts) {
+      const { target_value, warning_threshold, critical_threshold } = metric.targets_and_alerts;
+      rules += `    input.value >= ${critical_threshold}\n`;
+      rules += `    # Target: ${target_value}, Warning: ${warning_threshold}, Critical: ${critical_threshold}\n`;
     }
     
     rules += `}\n\n`;
@@ -103,22 +79,21 @@ export class PolicyGenerator {
     
     rules += `validate_governance if {\n`;
     
-    if (metric.governance?.owner) {
-      rules += `    # Check if requester has appropriate permissions\n`;
-      rules += `    input.user.id == "${metric.governance.owner}"\n`;
+    if (metric.governance?.technical_owner) {
+      rules += `    # Check if requester is technical owner\n`;
+      rules += `    input.user.id == "${metric.governance.technical_owner}"\n`;
     }
     
-    if (metric.governance?.approvers && metric.governance.approvers.length > 0) {
+    if (metric.governance?.business_owner) {
       rules += `} else if {\n`;
-      rules += `    # Or is an approved user\n`;
-      const approvers = metric.governance.approvers.map((a) => `"${a}"`).join(', ');
-      rules += `    input.user.id in [${approvers}]\n`;
+      rules += `    # Or is business owner\n`;
+      rules += `    input.user.id == "${metric.governance.business_owner}"\n`;
     }
     
-    if (metric.governance?.team) {
+    if (metric.governance?.owner_team) {
       rules += `} else if {\n`;
-      rules += `    # Or belongs to the team\n`;
-      rules += `    input.user.team == "${metric.governance.team}"\n`;
+      rules += `    # Or belongs to the owner team\n`;
+      rules += `    input.user.team == "${metric.governance.owner_team}"\n`;
     }
     
     rules += `}\n\n`;
@@ -131,11 +106,11 @@ export class PolicyGenerator {
   static generatePolicyBundle(metrics: MetricDefinition[]): Map<string, string> {
     const policies = new Map<string, string>();
     
-    metrics.forEach((metric) => {
-      const fileName = `${this.sanitizePackageName(metric.id)}.rego`;
+    for (const metric of metrics) {
+      const fileName = `${this.sanitizePackageName(metric.metric_id)}.rego`;
       const policy = this.generatePolicy(metric);
       policies.set(fileName, policy);
-    });
+    }
     
     return policies;
   }
@@ -144,6 +119,6 @@ export class PolicyGenerator {
    * Sanitize metric ID for OPA package name
    */
   private static sanitizePackageName(id: string): string {
-    return id.replace(/[^a-zA-Z0-9_]/g, '_');
+    return id.replace(/\W/g, '_');
   }
 }

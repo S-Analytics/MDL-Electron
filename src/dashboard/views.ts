@@ -240,27 +240,32 @@ export function getDashboardHTML(): string {
                 <div class="value" id="totalMetrics">0</div>
             </div>
             <div class="stat-card">
-                <h3>Categories</h3>
-                <div class="value" id="totalCategories">0</div>
+                <h3>Objectives</h3>
+                <div class="value" id="totalObjectives">0</div>
             </div>
             <div class="stat-card">
-                <h3>Data Types</h3>
-                <div class="value" id="totalDataTypes">0</div>
+                <h3>Business Domains</h3>
+                <div class="value" id="totalDomains">0</div>
             </div>
             <div class="stat-card">
-                <h3>Owners</h3>
+                <h3>Owner Teams</h3>
                 <div class="value" id="totalOwners">0</div>
             </div>
         </div>
 
         <div class="section">
-            <h2>Metrics by Category</h2>
-            <div class="chart-container" id="categoryChart"></div>
+            <h2>Objectives & Key Results</h2>
+            <div id="objectivesGrid" class="metric-grid"></div>
         </div>
 
         <div class="section">
-            <h2>Metrics by Data Type</h2>
-            <div class="chart-container" id="dataTypeChart"></div>
+            <h2>Metrics by Business Domain</h2>
+            <div class="chart-container" id="domainChart"></div>
+        </div>
+
+        <div class="section">
+            <h2>Metrics by Tier</h2>
+            <div class="chart-container" id="tierChart"></div>
         </div>
 
         <div class="section">
@@ -280,19 +285,21 @@ export function getDashboardHTML(): string {
 
     <script>
         let allMetrics = [];
+        let allObjectives = [];
         let stats = {};
 
         async function fetchData() {
             try {
-                const [metricsRes, statsRes] = await Promise.all([
-                    fetch('/api/metrics'),
+                const [catalogRes, statsRes] = await Promise.all([
+                    fetch('/api/catalog'),
                     fetch('/api/stats')
                 ]);
                 
-                const metricsData = await metricsRes.json();
+                const catalogData = await catalogRes.json();
                 const statsData = await statsRes.json();
                 
-                allMetrics = metricsData.data || [];
+                allMetrics = catalogData.data?.metrics || [];
+                allObjectives = catalogData.data?.objectives || [];
                 stats = statsData.data || {};
                 
                 updateStats();
@@ -307,14 +314,14 @@ export function getDashboardHTML(): string {
 
         function updateStats() {
             document.getElementById('totalMetrics').textContent = stats.total || 0;
-            document.getElementById('totalCategories').textContent = Object.keys(stats.byCategory || {}).length;
-            document.getElementById('totalDataTypes').textContent = Object.keys(stats.byDataType || {}).length;
+            document.getElementById('totalObjectives').textContent = stats.objectives || 0;
+            document.getElementById('totalDomains').textContent = Object.keys(stats.byDomain || {}).length;
             document.getElementById('totalOwners').textContent = Object.keys(stats.byOwner || {}).length;
         }
 
         function updateCharts() {
-            renderBarChart('categoryChart', stats.byCategory || {});
-            renderBarChart('dataTypeChart', stats.byDataType || {});
+            renderBarChart('domainChart', stats.byDomain || {});
+            renderBarChart('tierChart', stats.byTier || {});
             
             // Update category filter
             const categoryFilter = document.getElementById('categoryFilter');
@@ -325,6 +332,9 @@ export function getDashboardHTML(): string {
                 option.textContent = cat;
                 categoryFilter.appendChild(option);
             });
+            
+            // Render objectives
+            renderObjectives(allObjectives || []);
         }
 
         function renderBarChart(containerId, data) {
@@ -373,18 +383,71 @@ export function getDashboardHTML(): string {
             grid.innerHTML = filtered.map(metric => \`
                 <div class="metric-card">
                     <h3>\${metric.name}</h3>
-                    <div class="id">ID: \${metric.id}</div>
+                    <div class="id">ID: \${metric.metric_id}</div>
                     <p>\${metric.description}</p>
                     <div class="tags">
-                        <span class="tag">\${metric.category}</span>
-                        <span class="tag">\${metric.dataType}</span>
+                        <span class="tag">\${metric.tier}</span>
+                        <span class="tag">\${metric.business_domain}</span>
+                        <span class="tag">\${metric.metric_type}</span>
                         \${(metric.tags || []).map(tag => \`<span class="tag">\${tag}</span>\`).join('')}
                     </div>
                     \${metric.governance ? \`
                         <div class="governance-info">
-                            <span><strong>Owner:</strong> \${metric.governance.owner || 'N/A'}</span>
-                            \${metric.governance.team ? \`<span><strong>Team:</strong> \${metric.governance.team}</span>\` : ''}
-                            \${metric.governance.complianceLevel ? \`<span><strong>Compliance:</strong> \${metric.governance.complianceLevel}</span>\` : ''}
+                            <span><strong>Owner Team:</strong> \${metric.governance.owner_team || 'N/A'}</span>
+                            <span><strong>Technical Owner:</strong> \${metric.governance.technical_owner || 'N/A'}</span>
+                            <span><strong>Classification:</strong> \${metric.governance.data_classification || 'N/A'}</span>
+                            <span><strong>Status:</strong> \${metric.governance.status || 'N/A'}</span>
+                        </div>
+                    \` : ''}
+                    \${metric.definition ? \`
+                        <div class="governance-info" style="border-top: 1px solid #e2e8f0; margin-top: 0.75rem; padding-top: 0.75rem;">
+                            <span><strong>Formula:</strong> \${metric.definition.formula}</span>
+                            <span><strong>Unit:</strong> \${metric.definition.unit}</span>
+                            <span><strong>Direction:</strong> \${metric.definition.expected_direction}</span>
+                        </div>
+                    \` : ''}
+                </div>
+            \`).join('');
+        }
+
+        function renderObjectives(objectives) {
+            const grid = document.getElementById('objectivesGrid');
+            
+            if (objectives.length === 0) {
+                grid.innerHTML = '<div class="empty-state"><p>No objectives found</p></div>';
+                return;
+            }
+
+            grid.innerHTML = objectives.map(obj => \`
+                <div class="metric-card">
+                    <h3>\${obj.name}</h3>
+                    <div class="id">ID: \${obj.objective_id} | Owner: \${obj.owner_team} | Status: \${obj.status}</div>
+                    <p>\${obj.description}</p>
+                    <div class="governance-info">
+                        <span><strong>Start:</strong> \${obj.timeframe.start}</span>
+                        <span><strong>End:</strong> \${obj.timeframe.end}</span>
+                    </div>
+                    \${obj.key_results && obj.key_results.length > 0 ? \`
+                        <div style="margin-top: 1rem;">
+                            <strong>Key Results:</strong>
+                            <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
+                                \${obj.key_results.map(kr => \`
+                                    <li style="margin-bottom: 0.5rem;">
+                                        <strong>\${kr.name}</strong> (\${kr.kr_id})
+                                        <br/>
+                                        <span style="font-size: 0.9rem; color: #666;">
+                                            Baseline: \${kr.baseline_value} \${kr.unit} → Target: \${kr.target_value} \${kr.unit} 
+                                            (Direction: \${kr.direction})
+                                        </span>
+                                        \${kr.metric_ids && kr.metric_ids.length > 0 ? \`
+                                            <br/>
+                                            <span style="font-size: 0.85rem; color: #667eea;">
+                                                Metrics: \${kr.metric_ids.join(', ')}
+                                            </span>
+                                        \` : ''}
+                                    </li>
+                                \`).join('')}
+                            </ul>
                         </div>
                     \` : ''}
                 </div>

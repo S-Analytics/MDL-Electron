@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
-import { InMemoryMetricStore } from './storage';
-import { ConfigLoader } from './config';
-import { PolicyGenerator } from './opa';
 import * as fs from 'fs';
 import * as path from 'path';
+import { ConfigLoader } from './config';
+import { MetricDefinitionInput } from './models';
+import { PolicyGenerator } from './opa';
+import { InMemoryMetricStore } from './storage';
 
 const program = new Command();
 const DEFAULT_STORAGE_PATH = path.join(process.cwd(), '.mdl', 'metrics.json');
@@ -22,16 +23,16 @@ program
 program
   .command('list')
   .description('List all metric definitions')
-  .option('-c, --category <category>', 'Filter by category')
+  .option('-d, --business-domain <domain>', 'Filter by business domain')
   .option('-t, --tags <tags>', 'Filter by tags (comma-separated)')
-  .option('-o, --owner <owner>', 'Filter by owner')
+  .option('--tier <tier>', 'Filter by tier')
   .option('--json', 'Output as JSON')
   .action(async (options) => {
     try {
       const filters = {
-        category: options.category,
+        business_domain: options.businessDomain,
         tags: options.tags ? options.tags.split(',') : undefined,
-        owner: options.owner,
+        tier: options.tier,
       };
 
       const metrics = await store.findAll(
@@ -48,13 +49,15 @@ program
         } else {
           console.log(`\nFound ${metrics.length} metric(s):\n`);
           metrics.forEach((metric) => {
-            console.log(`ID: ${metric.id}`);
+            console.log(`ID: ${metric.metric_id}`);
             console.log(`Name: ${metric.name}`);
             console.log(`Category: ${metric.category}`);
-            console.log(`Type: ${metric.dataType}`);
+            console.log(`Type: ${metric.metric_type}`);
+            console.log(`Business Domain: ${metric.business_domain}`);
+            console.log(`Tier: ${metric.tier}`);
             console.log(`Description: ${metric.description}`);
-            if (metric.governance?.owner) {
-              console.log(`Owner: ${metric.governance.owner}`);
+            if (metric.governance?.technical_owner) {
+              console.log(`Owner: ${metric.governance.technical_owner}`);
             }
             console.log('---');
           });
@@ -110,8 +113,9 @@ program
       console.log(`Found ${metrics.length} metric(s) to import.`);
       
       for (const metric of metrics) {
-        const created = await store.create(metric);
-        console.log(`✓ Imported: ${created.name} (${created.id})`);
+        // Store.create accepts MetricDefinitionInput and will handle conversion
+        const created = await store.create(metric as unknown as MetricDefinitionInput);
+        console.log(`✓ Imported: ${created.name} (${created.metric_id})`);
       }
       
       console.log(`\nSuccessfully imported ${metrics.length} metric(s).`);
@@ -134,7 +138,7 @@ program
         return;
       }
 
-      ConfigLoader.saveToFile(file, metrics);
+      ConfigLoader.saveToFile(file, metrics as unknown as MetricDefinitionInput[]);
       console.log(`Exported ${metrics.length} metric(s) to ${file}`);
     } catch (error: any) {
       console.error('Error:', error.message);
@@ -242,15 +246,25 @@ program
       const stats = {
         total: metrics.length,
         byCategory: {} as Record<string, number>,
-        byDataType: {} as Record<string, number>,
+        byTier: {} as Record<string, number>,
+        byMetricType: {} as Record<string, number>,
+        byBusinessDomain: {} as Record<string, number>,
         byOwner: {} as Record<string, number>,
       };
 
       metrics.forEach((metric) => {
         stats.byCategory[metric.category] = (stats.byCategory[metric.category] || 0) + 1;
-        stats.byDataType[metric.dataType] = (stats.byDataType[metric.dataType] || 0) + 1;
-        if (metric.governance?.owner) {
-          stats.byOwner[metric.governance.owner] = (stats.byOwner[metric.governance.owner] || 0) + 1;
+        if (metric.tier) {
+          stats.byTier[metric.tier] = (stats.byTier[metric.tier] || 0) + 1;
+        }
+        if (metric.metric_type) {
+          stats.byMetricType[metric.metric_type] = (stats.byMetricType[metric.metric_type] || 0) + 1;
+        }
+        if (metric.business_domain) {
+          stats.byBusinessDomain[metric.business_domain] = (stats.byBusinessDomain[metric.business_domain] || 0) + 1;
+        }
+        if (metric.governance?.technical_owner) {
+          stats.byOwner[metric.governance.technical_owner] = (stats.byOwner[metric.governance.technical_owner] || 0) + 1;
         }
       });
 
@@ -265,10 +279,24 @@ program
         });
       }
 
-      if (Object.keys(stats.byDataType).length > 0) {
-        console.log('\nBy Data Type:');
-        Object.entries(stats.byDataType).forEach(([type, count]) => {
+      if (Object.keys(stats.byTier).length > 0) {
+        console.log('\nBy Tier:');
+        Object.entries(stats.byTier).forEach(([tier, count]) => {
+          console.log(`  ${tier}: ${count}`);
+        });
+      }
+
+      if (Object.keys(stats.byMetricType).length > 0) {
+        console.log('\nBy Metric Type:');
+        Object.entries(stats.byMetricType).forEach(([type, count]) => {
           console.log(`  ${type}: ${count}`);
+        });
+      }
+
+      if (Object.keys(stats.byBusinessDomain).length > 0) {
+        console.log('\nBy Business Domain:');
+        Object.entries(stats.byBusinessDomain).forEach(([domain, count]) => {
+          console.log(`  ${domain}: ${count}`);
         });
       }
 

@@ -1,7 +1,7 @@
-import { InMemoryMetricStore } from './MetricStore';
-import { MetricDefinitionInput, DataType } from '../models';
 import * as fs from 'fs';
 import * as path from 'path';
+import { DataType, MetricDefinitionInput } from '../models';
+import { InMemoryMetricStore } from './MetricStore';
 
 describe('InMemoryMetricStore', () => {
   let store: InMemoryMetricStore;
@@ -35,13 +35,14 @@ describe('InMemoryMetricStore', () => {
       const input = createSampleMetric();
       const metric = await store.create(input);
 
-      expect(metric.id).toBeDefined();
+      expect(metric.metric_id).toBeDefined();
       expect(metric.name).toBe(input.name);
       expect(metric.description).toBe(input.description);
       expect(metric.category).toBe(input.category);
-      expect(metric.dataType).toBe(input.dataType);
-      expect(metric.createdAt).toBeInstanceOf(Date);
-      expect(metric.updatedAt).toBeInstanceOf(Date);
+      expect(metric.governance.created_at).toBeDefined();
+      expect(metric.governance.updated_at).toBeDefined();
+      expect(metric.tier).toBe('Tier-2');
+      expect(metric.business_domain).toBe(input.category);
     });
 
     it('should generate unique IDs for metrics with same name', async () => {
@@ -49,7 +50,22 @@ describe('InMemoryMetricStore', () => {
       const metric1 = await store.create(input);
       const metric2 = await store.create(input);
 
-      expect(metric1.id).not.toBe(metric2.id);
+      expect(metric1.metric_id).not.toBe(metric2.metric_id);
+    });
+
+    it('should convert legacy input to new format', async () => {
+      const input = createSampleMetric();
+      const metric = await store.create(input);
+
+      expect(metric.short_name).toBeDefined();
+      expect(metric.alignment).toBeDefined();
+      expect(metric.definition).toBeDefined();
+      expect(metric.data).toBeDefined();
+      expect(metric.targets_and_alerts).toBeDefined();
+      expect(metric.visualization).toBeDefined();
+      expect(metric.relationships).toBeDefined();
+      expect(metric.operational_usage).toBeDefined();
+      expect(metric.metadata).toBeDefined();
     });
   });
 
@@ -57,10 +73,10 @@ describe('InMemoryMetricStore', () => {
     it('should find a metric by ID', async () => {
       const input = createSampleMetric();
       const created = await store.create(input);
-      const found = await store.findById(created.id);
+      const found = await store.findById(created.metric_id);
 
       expect(found).toBeDefined();
-      expect(found?.id).toBe(created.id);
+      expect(found?.metric_id).toBe(created.metric_id);
     });
 
     it('should return null for non-existent ID', async () => {
@@ -93,8 +109,17 @@ describe('InMemoryMetricStore', () => {
 
       const metrics = await store.findAll({ tags: ['tag1'] });
       expect(metrics.length).toBeGreaterThanOrEqual(1);
-      expect(metrics.some(m => m.id === metric1.id)).toBe(true);
+      expect(metrics.some(m => m.metric_id === metric1.metric_id)).toBe(true);
       expect(metrics.every(m => m.tags?.some(t => ['tag1'].includes(t)))).toBe(true);
+    });
+
+    it('should filter by business domain', async () => {
+      await store.create({ ...createSampleMetric(), category: 'finance' });
+      await store.create({ ...createSampleMetric(), category: 'marketing' });
+
+      const metrics = await store.findAll({ business_domain: 'finance' });
+      expect(metrics).toHaveLength(1);
+      expect(metrics[0].business_domain).toBe('finance');
     });
   });
 
@@ -106,13 +131,15 @@ describe('InMemoryMetricStore', () => {
       // Small delay to ensure timestamp difference
       await new Promise(resolve => setTimeout(resolve, 10));
       
-      const updated = await store.update(created.id, {
+      const updated = await store.update(created.metric_id, {
         description: 'Updated description',
       });
 
       expect(updated.description).toBe('Updated description');
-      expect(updated.id).toBe(created.id);
-      expect(updated.updatedAt.getTime()).toBeGreaterThanOrEqual(created.updatedAt.getTime());
+      expect(updated.metric_id).toBe(created.metric_id);
+      expect(new Date(updated.governance.updated_at).getTime()).toBeGreaterThanOrEqual(
+        new Date(created.governance.updated_at).getTime()
+      );
     });
 
     it('should throw error for non-existent metric', async () => {
@@ -127,10 +154,10 @@ describe('InMemoryMetricStore', () => {
       const input = createSampleMetric();
       const created = await store.create(input);
       
-      const deleted = await store.delete(created.id);
+      const deleted = await store.delete(created.metric_id);
       expect(deleted).toBe(true);
 
-      const found = await store.findById(created.id);
+      const found = await store.findById(created.metric_id);
       expect(found).toBeNull();
     });
 
@@ -145,7 +172,7 @@ describe('InMemoryMetricStore', () => {
       const input = createSampleMetric();
       const created = await store.create(input);
       
-      const exists = await store.exists(created.id);
+      const exists = await store.exists(created.metric_id);
       expect(exists).toBe(true);
     });
 
@@ -172,7 +199,7 @@ describe('InMemoryMetricStore', () => {
 
       // Create new store instance and verify it loads the data
       const store2 = new InMemoryMetricStore(testPersistencePath);
-      const found = await store2.findById(created.id);
+      const found = await store2.findById(created.metric_id);
 
       expect(found).toBeDefined();
       expect(found?.name).toBe(input.name);

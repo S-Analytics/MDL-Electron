@@ -1,111 +1,198 @@
 {
-  "metrics": [
+  "catalog_version": "1.0.0",
+  "catalog_name": "Company Metrics Definition Library",
+  "last_updated": "2025-01-01T00:00:00Z",
+  "owner_team": "Data & Analytics",
+  "contacts": [
     {
-      "name": "Revenue",
-      "description": "Total revenue generated from all sources",
-      "category": "financial",
-      "dataType": "currency",
-      "unit": "USD",
-      "tags": ["revenue", "financial", "kpi"],
-      "validationRules": [
-        {
-          "type": "min",
-          "value": 0,
-          "message": "Revenue cannot be negative"
-        }
-      ],
-      "governance": {
-        "owner": "finance-team",
-        "team": "Finance",
-        "approvers": ["cfo@example.com", "finance-lead@example.com"],
-        "complianceLevel": "internal",
-        "dataClassification": "internal",
-        "auditRequired": true
-      }
-    },
+      "name": "Metrics Catalog Owner",
+      "email": "owner@example.com"
+    }
+  ],
+  "objectives": [
     {
-      "name": "Customer Satisfaction Score",
-      "description": "Average customer satisfaction rating on a scale of 1-10",
-      "category": "customer",
-      "dataType": "number",
-      "tags": ["csat", "customer", "quality"],
-      "validationRules": [
+      "objective_id": "OBJ-001",
+      "name": "Improve Digital Customer Experience",
+      "description": "Increase satisfaction and reduce friction across mobile and web channels.",
+      "timeframe": {
+        "start": "2025-01-01",
+        "end": "2025-03-31"
+      },
+      "owner_team": "Digital Product",
+      "status": "active",
+      "key_results": [
         {
-          "type": "range",
-          "value": [1, 10],
-          "message": "CSAT score must be between 1 and 10"
-        }
-      ],
-      "governance": {
-        "owner": "customer-success",
-        "team": "Customer Success",
-        "complianceLevel": "internal",
-        "dataClassification": "internal"
-      }
-    },
-    {
-      "name": "Active Users",
-      "description": "Number of active users in the last 30 days",
-      "category": "engagement",
-      "dataType": "count",
-      "tags": ["users", "engagement", "dau"],
-      "validationRules": [
-        {
-          "type": "min",
-          "value": 0,
-          "message": "Active users cannot be negative"
-        }
-      ],
-      "governance": {
-        "owner": "product-analytics",
-        "team": "Product",
-        "complianceLevel": "confidential",
-        "dataClassification": "sensitive"
-      }
-    },
-    {
-      "name": "API Response Time",
-      "description": "Average API response time in milliseconds",
-      "category": "performance",
-      "dataType": "duration",
-      "unit": "ms",
-      "tags": ["performance", "api", "latency"],
-      "validationRules": [
-        {
-          "type": "min",
-          "value": 0
+          "kr_id": "KR-001",
+          "name": "Increase mobile app NPS from 45 to 55",
+          "description": "Drive higher satisfaction for mobile users by addressing key friction points.",
+          "target_value": 55,
+          "baseline_value": 45,
+          "unit": "score",
+          "direction": "increase",
+          "current_value": null,
+          "metric_ids": ["METRIC-NPS-MOBILE"]
         },
         {
-          "type": "max",
-          "value": 10000,
-          "message": "Response time should not exceed 10 seconds"
+          "kr_id": "KR-002",
+          "name": "Reduce login failure rate from 5% to 2%",
+          "description": "Improve login success for legitimate users without compromising security.",
+          "target_value": 0.02,
+          "baseline_value": 0.05,
+          "unit": "ratio",
+          "direction": "decrease",
+          "current_value": null,
+          "metric_ids": ["METRIC-LOGIN-SUCCESS-RATE"]
         }
-      ],
-      "governance": {
-        "owner": "engineering",
-        "team": "Engineering",
-        "complianceLevel": "internal"
-      }
-    },
+      ]
+    }
+  ],
+  "metrics": [
     {
-      "name": "Conversion Rate",
-      "description": "Percentage of visitors who complete a desired action",
-      "category": "marketing",
-      "dataType": "percentage",
-      "unit": "%",
-      "tags": ["conversion", "marketing", "funnel"],
-      "validationRules": [
+      "metric_id": "METRIC-LOGIN-SUCCESS-RATE",
+      "name": "Login Success Rate",
+      "short_name": "login_success_rate",
+      "description": "Percentage of login attempts that result in a successful authentication.",
+      "category": "KPI",
+      "tier": "Tier-1",
+      "business_domain": "Digital Experience",
+      "metric_type": "leading",
+      "tags": ["authentication", "ux", "security"],
+      "alignment": {
+        "strategic_pillar": "Customer Experience",
+        "primary_objective_ids": ["OBJ-001"],
+        "related_okr_ids": ["OBJ-001:KR-002"],
+        "why_it_matters": "Indicates friction in authentication flow and its impact on user access."
+      },
+      "definition": {
+        "formula": "successful_logins / total_login_attempts",
+        "formula_detail": "Count of successful login events divided by all login attempts within the selected time window.",
+        "numerator": {
+          "event_name": "login_success",
+          "filters": []
+        },
+        "denominator": {
+          "event_name": "login_attempt",
+          "filters": []
+        },
+        "unit": "ratio",
+        "expected_direction": "increase",
+        "example_calculation": {
+          "successful_logins": 9500,
+          "total_login_attempts": 10000,
+          "result": 0.95
+        }
+      },
+      "data": {
+        "primary_sources": [
+          {
+            "system": "product_analytics",
+            "table_or_stream": "events_logins",
+            "connection_id": "analytics_warehouse"
+          }
+        ],
+        "secondary_sources": [
+          {
+            "system": "auth_service",
+            "table_or_stream": "auth_logs",
+            "connection_id": "auth_db"
+          }
+        ],
+        "data_freshness": "near_real_time",
+        "update_frequency": "5_minutes",
+        "time_grain": ["hour", "day", "week"],
+        "data_retention": "365_days"
+      },
+      "governance": {
+        "data_classification": "Non-PII",
+        "pii_involved": false,
+        "regulatory_constraints": ["general_security_standards"],
+        "owner_team": "Digital Analytics",
+        "technical_owner": "data_engineering",
+        "business_owner": "Head of Digital Product",
+        "version": "1.0.0",
+        "status": "active",
+        "created_at": "2025-01-01T00:00:00Z",
+        "updated_at": "2025-01-01T00:00:00Z"
+      },
+      "dimensions": [
         {
-          "type": "range",
-          "value": [0, 100],
-          "message": "Percentage must be between 0 and 100"
+          "name": "platform",
+          "allowed_values": ["web", "ios", "android"],
+          "required": true
+        },
+        {
+          "name": "region",
+          "allowed_values": [],
+          "required": false
+        },
+        {
+          "name": "customer_segment",
+          "allowed_values": ["consumer", "smb", "enterprise"],
+          "required": false
         }
       ],
-      "governance": {
-        "owner": "marketing-ops",
-        "team": "Marketing",
-        "approvers": ["cmo@example.com"],
-        "complianceLevel": "confidential"
+      "targets_and_alerts": {
+        "target_value": 0.98,
+        "warning_threshold": 0.95,
+        "critical_threshold": 0.90,
+        "comparison_baseline": "previous_7_days",
+        "alert_rules": [
+          {
+            "rule_id": "ALERT-LOGIN-001",
+            "condition": "value < critical_threshold",
+            "severity": "critical",
+            "notify_channels": ["slack:#sre-alerts", "email:auth-oncall@example.com"],
+            "evaluation_window": "15_minutes"
+          }
+        ]
+      },
+      "visualization": {
+        "default_chart_type": "line",
+        "default_time_range": "last_30_days",
+        "dashboard_locations": [
+          {
+            "tool": "Looker",
+            "url": "https://bi.example.com/dashboards/123-login-kpi"
+          },
+          {
+            "tool": "Grafana",
+            "url": "https://grafana.example.com/d/abc123/login-success"
+          }
+        ],
+        "drilldowns": [
+          "platform",
+          "region",
+          "customer_segment"
+        ]
+      },
+      "relationships": {
+        "upstream_metric_ids": [],
+        "downstream_metric_ids": ["METRIC-SESSION_SUCCESS_RATE"],
+        "tradeoffs": [
+          "Increasing security challenge frequency can negatively impact this metric."
+        ]
+      },
+      "operational_usage": {
+        "decision_use_cases": [
+          "Identify login issues impacting access to digital channels.",
+          "Trigger incident triage when success rate drops below critical threshold."
+        ],
+        "review_cadence": "daily",
+        "linked_playbooks": [
+          {
+            "name": "Login Failure Incident Runbook",
+            "url": "https://runbooks.example.com/login-failure"
+          }
+        ]
+      },
+      "metadata": {
+        "notes": "",
+        "example_queries": [
+          {
+            "language": "sql",
+            "query": "SELECT ... FROM events_logins ..."
+          }
+        ]
       }
     }
   ]
