@@ -32,7 +32,7 @@ app.use((req, res) => {
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 const HOST = process.env.HOST || '0.0.0.0';
 
-app.listen(PORT, HOST, () => {
+const server = app.listen(PORT, HOST, () => {
   console.log('');
   console.log('╔══════════════════════════════════════════════════════════════╗');
   console.log('║  MDL - Metrics Definition Library                           ║');
@@ -47,11 +47,13 @@ app.listen(PORT, HOST, () => {
   console.log('');
 });
 
+export { server };
+
 // Export for programmatic use
-export * from './api';
-export * from './config';
-export * from './models';
-export * from './opa';
-export * from './storage';
-export { store };
+    export * from './api';
+    export * from './config';
+    export * from './models';
+    export * from './opa';
+    export * from './storage';
+    export { store };
 

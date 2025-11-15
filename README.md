@@ -25,6 +25,25 @@ A comprehensive application to store and manage Metric Definitions with support 
 ```bash
 npm install
 npm run build
+
+### Electron (Desktop)
+
+Run in development (launches the Electron app and the local server):
+
+```bash
+# In one terminal: start the server in dev mode
+npm run dev
+
+# In another terminal: launch electron pointing to local server
+ELECTRON_DEV=true npm run electron:dev
+```
+
+Build distributables for all platforms (requires platform-specific tooling to create installers for Windows on macOS and vice-versa):
+
+```bash
+# Create packages for all platforms (on macOS this will build mac and linux targets; building Windows requires Wine or running on Windows)
+npm run electron:build
+```
 ```
 
 ### As Desktop Application
